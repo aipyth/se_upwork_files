@@ -270,6 +270,8 @@ class MainWindow(QMainWindow, WindowMixin):
 
         resetAll = action('&ResetAll', self.resetAll, None, 'resetall', u'Reset all')
 
+        goToPhoto = action('&Go to', self.goTo)
+
         color1 = action('Box Line Color', self.chooseColor1,
                         'Ctrl+L', 'color_line', u'Choose Box line color')
 
@@ -421,11 +423,11 @@ class MainWindow(QMainWindow, WindowMixin):
 
         self.tools = self.toolbar('Tools')
         self.actions.beginner = (
-            openf, opendir, changeSavedir, openNextImg, openPrevImg, verify, save, save_format, None, create, copy, delete, None,
+            openf, opendir, changeSavedir, goToPhoto, openNextImg, openPrevImg, verify, save, save_format, None, create, copy, delete, None,
             zoomIn, zoom, zoomOut, fitWindow, fitWidth)
 
         self.actions.advanced = (
-            openf, opendir, changeSavedir, openNextImg, openPrevImg, save, save_format, None,
+            openf, opendir, changeSavedir, goToPhoto, openNextImg, openPrevImg, save, save_format, None,
             createMode, editMode, None,
             hideAll, showAll)
 
@@ -501,6 +503,19 @@ class MainWindow(QMainWindow, WindowMixin):
         # Open Dir if deafult file
         if self.filePath and os.path.isdir(self.filePath):
             self.openDirDialog(dirpath=self.filePath)
+
+    def goTo(self):
+        file_index, input_flag = QInputDialog.getInt(self, 'Enter photo number',
+                                    'hint', min=1 ,max=self.files_count, step=1,
+                                    value=self.file_index+1)
+        if input_flag:
+            filename_to_open = self.files[file_index-1]
+            filePath = self.folderPath + filename_to_open
+            try:
+                self.loadFile(filePath)
+            except ValueError as error:
+                print("VallueError: {}".format(error))
+                self.loadFile(self.prevFilePath)
 
     ## Support Functions ##
     def set_format(self, save_format):
@@ -1052,16 +1067,17 @@ class MainWindow(QMainWindow, WindowMixin):
                 elif os.path.isfile(txtPath):
                     self.loadYOLOTXTByFilename(txtPath)
 
+            self.prevFilePath = filePath
             splited = filePath.split('\\')
-            filename = splited[-1]
+            self.filename = splited[-1]
             folderPath = [item + '\\' for item in splited[:-1]]
-            folderPath = ''.join(folderPath)
+            self.folderPath = ''.join(folderPath)
 
-            path, dirs, files = os.walk(folderPath).__next__()
-            file_index = files.index(filename)
-            files_count = len(files)
+            path, dirs, self.files = os.walk(self.folderPath).__next__()
+            self.file_index = self.files.index(self.filename)
+            self.files_count = len(self.files)
 			
-            self.setWindowTitle(__appname__ + ' ' + filePath + '  ' + "({}/{})".format(file_index, files_count))            
+            self.setWindowTitle(__appname__ + ' ' + filePath + '  ' + "({}/{})".format(self.file_index+1, self.files_count))
 
             # Default : select last item if there is at least one item
             if self.labelList.count():
