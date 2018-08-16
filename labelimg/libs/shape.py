@@ -120,7 +120,7 @@ class Shape(object):
                 for point in self.points:
                     min_x = min(min_x, point.x())
                     min_y = min(min_y, point.y())
-                print(min_x); print(min_y);
+                # print(min_x); print(min_y);
                 if min_x != sys.maxsize and min_y != sys.maxsize:
                     font = QFont()
                     font.setPointSize(20)

@@ -644,7 +644,14 @@ class MainWindow(QMainWindow, WindowMixin):
         QMessageBox.information(self, u'Information', msg)
 
     def createShape(self):
-        assert self.beginner()
+        # assert self.beginner()
+        print('In createShape')
+        # edit = False
+        #
+        # self.canvas.setEditing(edit)
+        # self.actions.createMode.setEnabled(edit)
+        # self.actions.editMode.setEnabled(not edit)
+
         self.canvas.setEditing(False)
         self.actions.create.setEnabled(False)
 
@@ -659,6 +666,7 @@ class MainWindow(QMainWindow, WindowMixin):
             self.actions.create.setEnabled(True)
 
     def toggleDrawMode(self, edit=True):
+        print("in toggleDrawMode")
         self.canvas.setEditing(edit)
         self.actions.createMode.setEnabled(edit)
         self.actions.editMode.setEnabled(not edit)
