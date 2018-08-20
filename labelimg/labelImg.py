@@ -7,6 +7,7 @@ import platform
 import re
 import sys
 import subprocess
+import sqlite3 as sql
 
 from functools import partial
 from collections import defaultdict
@@ -242,6 +243,8 @@ class MainWindow(QMainWindow, WindowMixin):
         opendir = action('&Open Dir', self.openDirDialog,
                          'Ctrl+u', 'open', u'Open Dir')
 
+        opendb = action('&Open Database', self.openDBDialog, None)
+
         changeSavedir = action('&Change Save Dir', self.changeSavedirDialog,
                                'Ctrl+r', 'open', u'Change default saved Annotation dir')
 
@@ -423,11 +426,11 @@ class MainWindow(QMainWindow, WindowMixin):
 
         self.tools = self.toolbar('Tools')
         self.actions.beginner = (
-            openf, opendir, changeSavedir, goToPhoto, openNextImg, openPrevImg, verify, save, save_format, None, create, copy, delete, None,
+            openf, opendir, opendb, changeSavedir, goToPhoto, openNextImg, openPrevImg, verify, save, save_format, None, create, copy, delete, None,
             zoomIn, zoom, zoomOut, fitWindow, fitWidth)
 
         self.actions.advanced = (
-            openf, opendir, changeSavedir, goToPhoto, openNextImg, openPrevImg, save, save_format, None,
+            openf, opendir, opendb, changeSavedir, goToPhoto, openNextImg, openPrevImg, save, save_format, None,
             createMode, editMode, None,
             hideAll, showAll)
 
@@ -645,7 +648,7 @@ class MainWindow(QMainWindow, WindowMixin):
 
     def createShape(self):
         # assert self.beginner()
-        print('In createShape')
+        # print('In createShape')
         # edit = False
         #
         # self.canvas.setEditing(edit)
@@ -666,7 +669,7 @@ class MainWindow(QMainWindow, WindowMixin):
             self.actions.create.setEnabled(True)
 
     def toggleDrawMode(self, edit=True):
-        print("in toggleDrawMode")
+        # print("in toggleDrawMode")
         self.canvas.setEditing(edit)
         self.actions.createMode.setEnabled(edit)
         self.actions.editMode.setEnabled(not edit)
@@ -1237,9 +1240,46 @@ class MainWindow(QMainWindow, WindowMixin):
         self.fileListWidget.clear()
         self.mImgList = self.scanAllImages(dirpath)
         self.openNextImg()
+        print(self.mImgList)
         for imgPath in self.mImgList:
             item = QListWidgetItem(imgPath)
             self.fileListWidget.addItem(item)
+
+    def openDBDialog(self):
+        targetDirPath = QFileDialog.getOpenFileName(self,
+                                                        '%s - Open DB' % __appname__,
+                                                        filter="SQLite database (*.db)")
+        print(targetDirPath)
+        self.importDBImages(targetDirPath[0])
+
+
+    def importDBImages(self, db_path):
+        if not self.mayContinue() or not db_path:
+            return
+
+        # self.lastOpenDir = db_path
+        # self.dirname = db_path
+        self.filePath = None
+        self.fileListWidget.clear()
+        self.mImgList = self.getDBImages(db_path)
+        self.openNextImg()
+        print(self.mImgList)
+        for imgPath in self.mImgList:
+            item = QListWidgetItem(imgPath)
+            self.fileListWidget.addItem(item)
+
+    def getDBImages(self, db):
+        connection = sql.connect(db)
+        cur = connection.cursor()
+
+        cur.execute("SELECT image_path FROM images")
+        result = cur.fetchall()
+
+        ret = []
+        for i in result:
+            ret.append(i[0])
+
+        return ret
 
     def verifyImg(self, _value=False):
         # Proceding next image without dialog if having any label
