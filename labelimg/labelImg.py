@@ -1078,14 +1078,10 @@ class MainWindow(QMainWindow, WindowMixin):
                 elif os.path.isfile(txtPath):
                     self.loadYOLOTXTByFilename(txtPath)
 
-            self.prevFilePath = filePath
-            splited = filePath.split('\\')
-            self.filename = splited[-1]
-            folderPath = [item + '\\' for item in splited[:-1]]
-            self.folderPath = ''.join(folderPath)
+            # self.prevFilePath = filePath
 
-            path, dirs, self.files = os.walk(self.folderPath).__next__()
-            self.file_index = self.files.index(self.filename)
+            self.files = self.mImgList
+            self.file_index = self.files.index(filePath)
             self.files_count = len(self.files)
 			
             self.setWindowTitle(__appname__ + ' ' + filePath + '  ' + "({}/{})".format(self.file_index+1, self.files_count))
@@ -1274,6 +1270,9 @@ class MainWindow(QMainWindow, WindowMixin):
 
         cur.execute("SELECT image_path FROM images")
         result = cur.fetchall()
+
+        cur.close()
+        connection.close()
 
         ret = []
         for i in result:
