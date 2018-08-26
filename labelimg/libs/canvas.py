@@ -33,6 +33,7 @@ class Canvas(QWidget):
     CREATE, EDIT = list(range(2))
 
     epsilon = 11.0
+    limiter = 200
 
     def __init__(self, *args, **kwargs):
         super(Canvas, self).__init__(*args, **kwargs)
@@ -62,6 +63,9 @@ class Canvas(QWidget):
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.WheelFocus)
         self.verified = False
+
+    def setEpsilon(self, image):
+        self.epsilon = max(image.bytesPerLine() / self.limiter, 11)
 
     def setDrawingColor(self, qColor):
         self.drawingLineColor = qColor

@@ -1042,6 +1042,7 @@ class MainWindow(QMainWindow, WindowMixin):
                 self.canvas.verified = False
 
             image = QImage.fromData(self.imageData)
+            self.canvas.setEpsilon(image)
             if image.isNull():
                 self.errorMessage(u'Error opening file',
                                   u"<p>Make sure <i>%s</i> is a valid image file." % unicodeFilePath)
