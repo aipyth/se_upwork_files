@@ -116,24 +116,38 @@ class Shape(object):
             painter.drawPath(vrtx_path)
             painter.fillPath(vrtx_path, self.vertex_fill_color)
 
-            # Draw text at the top-left
+            # Draw text
+            self.fontSize = int(line_path.length() / 38)
+            self.fontSize = max(self.fontSize, config.SETTING_FONT_SIZE)
             if self.paintLabel:
-                min_x = sys.maxsize
-                min_y = sys.maxsize
-                for point in self.points:
-                    min_x = min(min_x, point.x())
-                    # min_y 	= min(min_y, point.y())
-                    min_y = min(min_y, point.y() - config.SETTING_LABEL_INDENT)  # SE original .3
-                # min_y 	= min(min_y, point.y()-FONT_SIZE*1.0) 	# SE
-                if min_x != sys.maxsize and min_y != sys.maxsize:
-                    font = QFont()
-                    # font.setPointSize(8)  from SE
-                    font.setPointSize(config.SETTING_FONT_SIZE)
-                    font.setBold(True)
-                    painter.setFont(font)
-                    if (self.label == None):
-                        self.label = ""
-                    painter.drawText(min_x, min_y, self.label)
+                positionFlag = True if (self.points[0].y() - self.fontSize * 1.05) > 0 else False
+                positionBotFlag = True if (self.points[2].y() - self.fontSize * 1.05) > 0 else False
+                reversedShapeFlag = True if (self.points[2].y() < self.points[0].y()) else False
+                halfOfLabel = int((len(self.label) / 2) * (self.fontSize * 0.7))
+
+                xPosition = ((self.points[1].x() + self.points[0].x()) / 2) - halfOfLabel
+                if not reversedShapeFlag:
+                    if positionFlag:
+                        yPosition = self.points[0].y() - self.fontSize * 0.5
+                    elif not positionFlag:
+                        yPosition = self.points[2].y() + self.fontSize * 1.34
+                else:
+                    if positionBotFlag:
+                        yPosition = self.points[2].y() - self.fontSize * 0.5
+                    elif not positionBotFlag:
+                        yPosition = self.points[0].y() + self.fontSize * 1.34
+
+                font = QFont()
+                font.setPointSize(self.fontSize)
+                font.setBold(False)
+                painter.setFont(font)
+                if (self.label == None):
+                    self.label = ""
+
+                color.setAlpha(config.SETTING_TEXT_TRANSPARENCY)
+                pen = QPen(color)
+                painter.setPen(pen)
+                painter.drawText(xPosition, yPosition, self.label)
 
             if self.fill:
                 color = self.select_fill_color if self.selected else self.fill_color

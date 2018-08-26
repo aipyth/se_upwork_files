@@ -126,7 +126,7 @@ class Canvas(QWidget):
                     pos = self.current[0]
                     color = self.current.line_color
                     self.overrideCursor(CURSOR_POINT)
-                    self.current.highlightVertex(0, Shape.NEAR_VERTEX)
+                    self.current.highlightVertex(0, Shape.NEAR_VERTEX) # IZ: that thing makes me to drive crazy
                 self.line[1] = pos
                 self.line.line_color = color
                 self.prevPoint = QPointF()
@@ -173,7 +173,7 @@ class Canvas(QWidget):
                 if self.selectedVertex():
                     self.hShape.highlightClear()
                 self.hVertex, self.hShape = index, shape
-                shape.highlightVertex(index, shape.MOVE_VERTEX)
+                # shape.highlightVertex(index, shape.MOVE_VERTEX) # IZ: that thing makes me to drive crazy too :D really
                 self.overrideCursor(CURSOR_POINT)
                 self.setToolTip("Click & drag to move point")
                 self.setStatusTip(self.toolTip())
@@ -298,7 +298,7 @@ class Canvas(QWidget):
         self.deSelectShape()
         if self.selectedVertex():  # A vertex is marked for selection.
             index, shape = self.hVertex, self.hShape
-            shape.highlightVertex(index, shape.MOVE_VERTEX)
+            # shape.highlightVertex(index, shape.MOVE_VERTEX) # IZ: Same story bro, I'm crazy enough now
             self.selectShape(shape)
             return
         for shape in reversed(self.shapes):

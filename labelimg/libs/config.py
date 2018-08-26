@@ -6,5 +6,6 @@ class CConfig(object):
             cls_.SETTING_TRANSPARENCY = 128
             cls_.SETTING_FONT_SIZE = 20
             cls_.SETTING_LABEL_INDENT = 30
+            cls_.SETTING_TEXT_TRANSPARENCY = 255
             cls_._instance = object.__new__(cls_, *args, **kwargs)
         return cls_._instance
