@@ -4,7 +4,8 @@
 try:
     from PyQt5.QtGui import QImage
 except ImportError:
-    from PyQt4.QtGui import QImage
+    pass
+    # from PyQt4.QtGui import QImage
 
 from base64 import b64encode, b64decode
 from libs.pascal_voc_io import PascalVocWriter

@@ -1,18 +1,20 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+# from config import PEN_SIZE, TRANSLUCENT
 
 try:
     from PyQt5.QtGui import *
     from PyQt5.QtCore import *
 except ImportError:
-    from PyQt4.QtGui import *
-    from PyQt4.QtCore import *
+    pass
+    # from PyQt4.QtGui import *
+    # from PyQt4.QtCore import *
 
 from libs.lib import distance
+from libs.config import CConfig
+
 import sys
 
-TRANSLUCENT = 255
 DEFAULT_LINE_COLOR = QColor(0, 255, 0, 128)
 DEFAULT_FILL_COLOR = QColor(255, 0, 0, 128)
 DEFAULT_SELECT_LINE_COLOR = QColor(255, 255, 255)
@@ -49,8 +51,8 @@ class Shape(object):
         self._highlightIndex = None
         self._highlightMode = self.NEAR_VERTEX
         self._highlightSettings = {
-            self.NEAR_VERTEX: (4, self.P_ROUND),
-            self.MOVE_VERTEX: (1.5, self.P_SQUARE),
+            self.NEAR_VERTEX: (40, self.P_ROUND),
+            self.MOVE_VERTEX: (10.5, self.P_SQUARE),
         }
 
         self._closed = False
@@ -85,13 +87,14 @@ class Shape(object):
         self._closed = False
 
     def paint(self, painter):
+        config = CConfig()
         if self.points:
             color = self.select_line_color if self.selected else self.line_color
             if not self.selected:
-                color.setAlpha(TRANSLUCENT)
+                color.setAlpha(config.SETTING_TRANSPARENCY)
             pen = QPen(color)
             # Try using integer sizes for smoother drawing(?)
-            pen.setWidth(max(1, int(round(2.0 / self.scale))))
+            pen.setWidth(max(config.SETTING_PEN_SIZE, int(round(2.0 / self.scale))))
             painter.setPen(pen)
 
             line_path = QPainterPath()
@@ -101,7 +104,7 @@ class Shape(object):
             # Uncommenting the following line will draw 2 paths
             # for the 1st vertex, and make it non-filled, which
             # may be desirable.
-            #self.drawVertex(vrtx_path, 0)
+            # self.drawVertex(vrtx_path, 0)
 
             for i, p in enumerate(self.points):
                 line_path.lineTo(p)
@@ -119,19 +122,23 @@ class Shape(object):
                 min_y = sys.maxsize
                 for point in self.points:
                     min_x = min(min_x, point.x())
-                    min_y = min(min_y, point.y())
-                # print(min_x); print(min_y);
+                    # min_y 	= min(min_y, point.y())
+                    min_y = min(min_y, point.y() - config.SETTING_LABEL_INDENT)  # SE original .3
+                # min_y 	= min(min_y, point.y()-FONT_SIZE*1.0) 	# SE
                 if min_x != sys.maxsize and min_y != sys.maxsize:
                     font = QFont()
-                    font.setPointSize(20)
+                    # font.setPointSize(8)  from SE
+                    font.setPointSize(config.SETTING_FONT_SIZE)
                     font.setBold(True)
                     painter.setFont(font)
-                    if(self.label == None):
+                    if (self.label == None):
                         self.label = ""
                     painter.drawText(min_x, min_y, self.label)
 
             if self.fill:
                 color = self.select_fill_color if self.selected else self.fill_color
+                if not self.selected:
+                    color.setAlpha(config.SETTING_TRANSPARENCY)
                 painter.fillPath(line_path, color)
 
     def drawVertex(self, path, i):

@@ -12,20 +12,20 @@ import sqlite3 as sql
 from functools import partial
 from collections import defaultdict
 
-#try:
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-#except ImportError:
+try:
+    from PyQt5.QtGui import *
+    from PyQt5.QtCore import *
+    from PyQt5.QtWidgets import *
+except ImportError:
     # needed for py3+qt4
     # Ref:
     # http://pyqt.sourceforge.net/Docs/PyQt4/incompatible_apis.html
     # http://stackoverflow.com/questions/21217399/pyqt4-qtcore-qvariant-object-instead-of-a-string
-    #if sys.version_info.major >= 3:
-    #    import sip
-    #    sip.setapi('QVariant', 2)
-    #from PyQt4.QtGui import *
-    #from PyQt4.QtCore import *
+    if sys.version_info.major >= 3:
+       import sip
+       sip.setapi('QVariant', 2)
+    from PyQt4.QtGui import *
+    from PyQt4.QtCore import *
 
 # import resources
 # Add internal libs
@@ -45,6 +45,7 @@ from libs.yolo_io import YoloReader
 from libs.yolo_io import TXT_EXT
 from libs.ustr import ustr
 from libs.version import __version__
+from libs.settingsDialog import SettingsDialog
 
 __appname__ = 'labelImg'
 
@@ -280,11 +281,13 @@ class MainWindow(QMainWindow, WindowMixin):
 
         createMode = action('Create\nRectBox', self.setCreateMode,
                             'w', 'new', u'Start drawing Boxs', enabled=False)
-        editMode = action('&Edit\nRectBox', self.setEditMode,
-                          'Ctrl+J', 'edit', u'Move and edit Boxs', enabled=False)
 
         create = action('Create\nRectBox', self.createShape,
                         'w', 'new', u'Draw a new Box', enabled=False)
+
+        editMode = action('&Edit\nRectBox', self.setEditMode,
+                          'Ctrl+J', 'edit', u'Move and edit Boxs', enabled=False)
+
         delete = action('Delete\nRectBox', self.deleteSelectedShape,
                         'Delete', 'delete', u'Delete', enabled=False)
         copy = action('&Duplicate\nRectBox', self.copySelectedShape,
@@ -348,6 +351,9 @@ class MainWindow(QMainWindow, WindowMixin):
                                 icon='color', tip=u'Change the fill color for this specific shape',
                                 enabled=False)
 
+        opensettings = action('&OpenSettings', self.openSettings,
+                      'Ctrl+Z', 'settings', u'Open settings')
+
         labels = self.dock.toggleViewAction()
         labels.setText('Show/Hide Label Panel')
         labels.setShortcut('Ctrl+Shift+L')
@@ -366,9 +372,9 @@ class MainWindow(QMainWindow, WindowMixin):
                               shapeLineColor=shapeLineColor, shapeFillColor=shapeFillColor,
                               zoom=zoom, zoomIn=zoomIn, zoomOut=zoomOut, zoomOrg=zoomOrg,
                               fitWindow=fitWindow, fitWidth=fitWidth,
-                              zoomActions=zoomActions,
+                              zoomActions=zoomActions, opensettings=opensettings,
                               fileMenuActions=(
-                                  openf, opendir, save, saveAs, close, resetAll, quit),
+                                  openf, opendir, save, saveAs, close, resetAll, opensettings, quit),
                               beginner=(), advanced=(),
                               editMenu=(edit, copy, delete,
                                         None, color1),
@@ -405,7 +411,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.paintLabelsOption.triggered.connect(self.togglePaintLabelsOption)
 
         addActions(self.menus.file,
-                   (openf, opendir, changeSavedir, openAnnotation, self.menus.recentFiles, save, save_format, saveAs, close, resetAll, quit))
+                   (openf, opendir, changeSavedir, openAnnotation, self.menus.recentFiles, save, save_format, saveAs, close, resetAll, opensettings, quit))
         addActions(self.menus.help, (help, showInfo))
         addActions(self.menus.view, (
             self.autoSaving,
@@ -508,17 +514,18 @@ class MainWindow(QMainWindow, WindowMixin):
             self.openDirDialog(dirpath=self.filePath)
 
     def goTo(self):
-        file_index, input_flag = QInputDialog.getInt(self, 'Enter photo number',
-                                    'hint', min=1 ,max=self.files_count, step=1,
-                                    value=self.file_index+1)
+        file_index, input_flag = QInputDialog.getInt(self, 'Enter photo number', 'hint', min=1,
+                                                              max=self.files_count, step=1,
+                                                              value = self.file_index + 1)
         if input_flag:
-            filename_to_open = self.files[file_index-1]
-            filePath = self.folderPath + filename_to_open
-            try:
-                self.loadFile(filePath)
-            except ValueError as error:
-                print("VallueError: {}".format(error))
-                self.loadFile(self.prevFilePath)
+            filename_to_open = self.files[file_index - 1]
+            print(filename_to_open)
+            filePath = filename_to_open
+        try:
+            self.loadFile(filePath)
+        except ValueError as error:
+            print("ValueError: {}".format(error))
+            self.loadFile(self.prevFilePath)
 
     ## Support Functions ##
     def set_format(self, save_format):
@@ -647,14 +654,8 @@ class MainWindow(QMainWindow, WindowMixin):
         QMessageBox.information(self, u'Information', msg)
 
     def createShape(self):
-        # assert self.beginner()
-        # print('In createShape')
-        # edit = False
-        #
-        # self.canvas.setEditing(edit)
-        # self.actions.createMode.setEnabled(edit)
-        # self.actions.editMode.setEnabled(not edit)
-
+        # print("I am in create shape")
+        assert self.beginner()
         self.canvas.setEditing(False)
         self.actions.create.setEnabled(False)
 
@@ -669,12 +670,12 @@ class MainWindow(QMainWindow, WindowMixin):
             self.actions.create.setEnabled(True)
 
     def toggleDrawMode(self, edit=True):
-        # print("in toggleDrawMode")
         self.canvas.setEditing(edit)
         self.actions.createMode.setEnabled(edit)
         self.actions.editMode.setEnabled(not edit)
 
     def setCreateMode(self):
+        # print("I am in create mode")
         assert self.advanced()
         self.toggleDrawMode(False)
 
@@ -844,6 +845,10 @@ class MainWindow(QMainWindow, WindowMixin):
         except LabelFileError as e:
             self.errorMessage(u'Error saving label data', u'<b>%s</b>' % e)
             return False
+
+    def openSettings(self):
+        dlg = SettingsDialog()
+        dlg.exec_()
 
     def copySelectedShape(self):
         self.addLabel(self.canvas.copySelectedShape())
@@ -1078,13 +1083,12 @@ class MainWindow(QMainWindow, WindowMixin):
                 elif os.path.isfile(txtPath):
                     self.loadYOLOTXTByFilename(txtPath)
 
-            # self.prevFilePath = filePath
-
             self.files = self.mImgList
             self.file_index = self.files.index(filePath)
             self.files_count = len(self.files)
-			
-            self.setWindowTitle(__appname__ + ' ' + filePath + '  ' + "({}/{})".format(self.file_index+1, self.files_count))
+
+            self.setWindowTitle(
+                __appname__ + ' ' + filePath + '  ' + "({}/{})".format(self.file_index + 1, self.files_count))
 
             # Default : select last item if there is at least one item
             if self.labelList.count():
@@ -1236,20 +1240,27 @@ class MainWindow(QMainWindow, WindowMixin):
         self.fileListWidget.clear()
         self.mImgList = self.scanAllImages(dirpath)
         self.openNextImg()
-        print(self.mImgList)
         for imgPath in self.mImgList:
             item = QListWidgetItem(imgPath)
             self.fileListWidget.addItem(item)
 
     def openDBDialog(self):
+        """
+        Open a getFileName dialog to select the db to open
+        :return:
+        """
         targetDirPath = QFileDialog.getOpenFileName(self,
-                                                        '%s - Open DB' % __appname__,
-                                                        filter="SQLite database (*.db)")
+                                                    '%s - Open DB' % __appname__,
+                                                    filter = "SQLite database (*.db)")
         print(targetDirPath)
         self.importDBImages(targetDirPath[0])
 
-
     def importDBImages(self, db_path):
+        """
+        Gets the images paths from db
+        :param db_path: db path
+        :return: None
+        """
         if not self.mayContinue() or not db_path:
             return
 
@@ -1260,24 +1271,30 @@ class MainWindow(QMainWindow, WindowMixin):
         self.mImgList = self.getDBImages(db_path)
         self.openNextImg()
         print(self.mImgList)
+
         for imgPath in self.mImgList:
             item = QListWidgetItem(imgPath)
             self.fileListWidget.addItem(item)
 
     def getDBImages(self, db):
+        """
+        Open given db and parse paths of images
+
+            DB must contain a table 'images'
+            with column 'image_path', where are
+            the paths to the images
+        :param db: path to db
+        :return: list with paths
+        """
         connection = sql.connect(db)
         cur = connection.cursor()
-
         cur.execute("SELECT image_path FROM images")
         result = cur.fetchall()
-
         cur.close()
         connection.close()
-
         ret = []
         for i in result:
             ret.append(i[0])
-
         return ret
 
     def verifyImg(self, _value=False):
@@ -1516,6 +1533,7 @@ class MainWindow(QMainWindow, WindowMixin):
         paintLabelsOptionChecked = self.paintLabelsOption.isChecked()
         for shape in self.canvas.shapes:
             shape.paintLabel = paintLabelsOptionChecked
+        self.canvas.update()  ## added SE
 
 def inverted(color):
     return QColor(*[255 - v for v in color.getRgb()])
