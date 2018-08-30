@@ -1,0 +1,4 @@
+notes: in canvas.py, variable limiter defines ep, has to do with smart edititi.
+8-30-2018 
+1. include sort within label_img and use only advanced mode, and work on editing points that are overlapped.
+2. And find your live search code and upload to a repo
