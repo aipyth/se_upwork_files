@@ -7,7 +7,7 @@ import sys
 SORT = True
 
 # Path to the folder
-PATH = 'E:\\imgs'
+PATH = r'C:\Users\se\Downloads\manual classifier\labelImg-master\demo'
 DB = 'images.db'
 TABLE = 'images'
 # Columns which will be created in db
