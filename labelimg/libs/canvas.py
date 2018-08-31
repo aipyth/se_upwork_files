@@ -140,8 +140,25 @@ class Canvas(QWidget):
             self.repaint()
             return
 
+        # Polygon/Vertex moving.
+        if Qt.LeftButton & ev.buttons():
+            if self.selectedVertex():
+                print("Vertex moving")
+                self.boundedMoveVertex(pos)
+                self.shapeMoved.emit()
+                self.repaint()
+            elif self.selectedShape and self.prevPoint:
+                print("Polygon moving")
+                # print(self.prevPoint)
+                self.overrideCursor(CURSOR_MOVE)
+                self.boundedMoveShape(self.selectedShape, pos)
+                self.shapeMoved.emit()
+                self.repaint()
+            return
+
         # Polygon copy moving.
         if Qt.RightButton & ev.buttons():
+            print("Polygon copy")
             if self.selectedShapeCopy and self.prevPoint:
                 self.overrideCursor(CURSOR_MOVE)
                 self.boundedMoveShape(self.selectedShapeCopy, pos)
@@ -151,29 +168,22 @@ class Canvas(QWidget):
                 self.repaint()
             return
 
-        # Polygon/Vertex moving.
-        if Qt.LeftButton & ev.buttons():
-            if self.selectedVertex():
-                self.boundedMoveVertex(pos)
-                self.shapeMoved.emit()
-                self.repaint()
-            elif self.selectedShape and self.prevPoint:
-                self.overrideCursor(CURSOR_MOVE)
-                self.boundedMoveShape(self.selectedShape, pos)
-                self.shapeMoved.emit()
-                self.repaint()
-            return
+
 
         # Just hovering over the canvas, 2 posibilities:
         # - Highlight shapes
         # - Highlight vertex
         # Update shape/vertex fill and tooltip value accordingly.
         self.setToolTip("Image")
-        for shape in reversed([s for s in self.shapes if self.isVisible(s)]):
+        no_changes = True
+        for shape in [shape for shape in self.shapes if self.isVisible(shape)]: # IZ: there was reversed before list
+                                                                                # but I don't want it to be here
+                                                                            # Does it matter what list should be first?
             # Look for a nearby vertex to highlight. If that fails,
             # check if we happen to be inside a shape.
             index = shape.nearestVertex(pos, self.epsilon)
             if index is not None:
+                no_changes = False
                 if self.selectedVertex():
                     self.hShape.highlightClear()
                 self.hVertex, self.hShape = index, shape
@@ -184,6 +194,7 @@ class Canvas(QWidget):
                 self.update()
                 break
             elif shape.containsPoint(pos):
+                no_changes = False
                 if self.selectedVertex():
                     self.hShape.highlightClear()
                 self.hVertex, self.hShape = None, shape
@@ -192,8 +203,9 @@ class Canvas(QWidget):
                 self.setStatusTip(self.toolTip())
                 self.overrideCursor(CURSOR_GRAB)
                 self.update()
-                break
-        else:  # Nothing found, clear highlights, reset state.
+                # break # IZ: with break active above and break inactive here
+                        # we can give priority to vertexes and not shapes
+        if not no_changes:  # Nothing found, clear highlights, reset state.
             if self.hShape:
                 self.hShape.highlightClear()
                 self.update()
