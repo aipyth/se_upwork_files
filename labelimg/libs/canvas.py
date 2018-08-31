@@ -143,13 +143,10 @@ class Canvas(QWidget):
         # Polygon/Vertex moving.
         if Qt.LeftButton & ev.buttons():
             if self.selectedVertex():
-                print("Vertex moving")
                 self.boundedMoveVertex(pos)
                 self.shapeMoved.emit()
                 self.repaint()
             elif self.selectedShape and self.prevPoint:
-                print("Polygon moving")
-                # print(self.prevPoint)
                 self.overrideCursor(CURSOR_MOVE)
                 self.boundedMoveShape(self.selectedShape, pos)
                 self.shapeMoved.emit()
@@ -158,7 +155,6 @@ class Canvas(QWidget):
 
         # Polygon copy moving.
         if Qt.RightButton & ev.buttons():
-            print("Polygon copy")
             if self.selectedShapeCopy and self.prevPoint:
                 self.overrideCursor(CURSOR_MOVE)
                 self.boundedMoveShape(self.selectedShapeCopy, pos)
@@ -175,15 +171,16 @@ class Canvas(QWidget):
         # - Highlight vertex
         # Update shape/vertex fill and tooltip value accordingly.
         self.setToolTip("Image")
-        no_changes = True
-        for shape in [shape for shape in self.shapes if self.isVisible(shape)]: # IZ: there was reversed before list
-                                                                                # but I don't want it to be here
-                                                                            # Does it matter what list should be first?
+        changes = False
+        temp_shape_list = [shape for shape in self.shapes if self.isVisible(shape)]
+        # IZ: there was reversed before list but I don't want it to be here
+        # Does it matter what list should be first?
+        for shape in temp_shape_list:
             # Look for a nearby vertex to highlight. If that fails,
             # check if we happen to be inside a shape.
             index = shape.nearestVertex(pos, self.epsilon)
             if index is not None:
-                no_changes = False
+                changes = True
                 if self.selectedVertex():
                     self.hShape.highlightClear()
                 self.hVertex, self.hShape = index, shape
@@ -194,7 +191,7 @@ class Canvas(QWidget):
                 self.update()
                 break
             elif shape.containsPoint(pos):
-                no_changes = False
+                changes = True
                 if self.selectedVertex():
                     self.hShape.highlightClear()
                 self.hVertex, self.hShape = None, shape
@@ -205,7 +202,9 @@ class Canvas(QWidget):
                 self.update()
                 # break # IZ: with break active above and break inactive here
                         # we can give priority to vertexes and not shapes
-        if not no_changes:  # Nothing found, clear highlights, reset state.
+            if (temp_shape_list.index(shape) + 1) == len(temp_shape_list) and changes:
+                break
+        else:   # Nothing found, clear highlights, reset state.
             if self.hShape:
                 self.hShape.highlightClear()
                 self.update()
